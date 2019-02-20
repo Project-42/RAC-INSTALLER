@@ -1,0 +1,6 @@
+*.iso
+www_html/*.iso
+*.zip
+www_html/*.zip
+*.img
+RAC_disks/*.img

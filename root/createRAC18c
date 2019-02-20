@@ -1,0 +1,249 @@
+#!/bin/bash
+#Scripts, Software and Disks location
+#Set the location of the 'RAC-INSTALLER'
+rac_installer=$HOME/RAC-INSTALLER
+#You can change the location of the following elements
+rac_installer_root=$rac_installer/root
+www_html=$rac_installer/www_html
+rac_disks=$rac_installer/RAC_disks
+
+
+#######
+
+usage()
+{
+	echo "usage: createRAC18c -r [RACname]  -N network -s [storage servers] -n [nodes] | -h"
+	echo "Eg: RAC \"rac1\" with network NAT 1 and 1 storage server: $rac_installer_root/createRAC18c -r rac1 -N NAT1 -s1"
+	echo "$RAC_INSTALLER_ROOT/createRAC18c -N NAT7 will create 2 nodes and 1 storage servers by default with RAC name rac7"
+	#echo "This initial version creates two DB nodes and an NFS one"
+}
+
+if [ $# -ge 1 ]; then
+	while getopts r:n:d:N:s: option
+	do
+		case "${option}" in
+			n) nodes=${OPTARG} ;;
+			r) racname=${OPTARG} ;;
+			d) racdirector=${OPTARG} ;;
+			N) network=${OPTARG} ;;
+			s) nfs=${OPTARG} ;;
+			*) usage;;
+		esac
+	done
+else
+	usage
+	exit
+fi
+
+### set values if not given
+if [ -z $nodes ]; then  
+  nodes=2
+fi
+
+if [ -z $racdirector ]; then  
+  racdirector=1
+fi
+
+if [ -z $nfs ]; then  
+  nfs=1
+fi
+
+
+mynetwork=`echo $network|grep -o '.\{1\}$'`
+
+if [ -z $racname ]; then  
+racname=rac${mynetwork}
+fi
+
+#mysubnet=`echo $mynetwork|grep -o '.\{1\}$'`
+
+
+#myvar=
+# $network = NATX = NAT1, NAT2, etc
+# the number X is gonna be the network and will be subnetted
+# NATX   192.168.X.0/26 pub and scans
+# NATX-2 192.168.X.0/27 priv
+# NATX-3 192.168.X.0/27 storage
+
+
+# create first the network, then the storage, then the nodes
+
+createNetworks()
+{
+	echo ""
+	echo "################################"
+	echo "######### NETWORKS #############"
+	echo "################################"
+	echo ""
+
+	# CREATING THE NETWORKS
+	#mynetwork=`echo $network|grep -o '.\{1\}$'`
+	if [ ! -f /var/lib/libvirt/network/NAT$mynetwork.xml ]
+	then
+		echo "Creating Networks:
+NAT${mynetwork}    192.168.$mynetwork.0/26  Public 
+NAT${mynetwork}-2  192.168.$mynetwork.64/27 Private
+NAT${mynetwork}-3  192.168.$mynetwork.96/27 Storage
+"
+		./createNetwork NAT$mynetwork $racname $nodes $nfs 2>&1 >/dev/null
+	else
+		echo "Network $network already in use or not destroyed & undefined!"
+	fi
+}
+
+createNFS()
+{
+	echo ""
+	echo "################################"
+	echo "######### NFS SERVERS ##########"
+	echo "################################"
+	echo ""
+
+	# CREATING STORAGE SERVERS
+	for i in `seq 1 $nfs`;
+	do
+		echo "creating $racname-nfs${i}"
+		./createNFS nfs$i $racname $network $www_html $rac_disks 2>&1 >/dev/null &
+	done
+}
+
+
+awaitStorageOnline()
+{
+	### AWAITING STORAGE SERVER(S) INSTALLATION TO COME TO AN END
+	mysubnet=`echo $mynetwork|grep -o '.\{1\}$'`
+	./awaitStorage $mysubnet $nfs
+}
+
+
+awaitNodesOnline()
+{
+	### AWAITING STORAGE SERVER(S) INSTALLATION TO COME TO AN END
+	mysubnet=`echo $mynetwork|grep -o '.\{1\}$'`
+	./awaitNodes $mysubnet $nodes
+}
+
+
+
+createNodes()
+{
+	echo ""
+	echo "################################"
+	echo "######### NODES ################"
+	echo "################################"
+	echo ""
+	
+	kill $(ps aux | grep '[p]ython -m SimpleHTTPServer' | awk '{print $2}')
+	cd $www_html 
+	python -m SimpleHTTPServer 8042 & 
+	cd $rac_installer_root
+
+	echo "SimpleHTTPServer started"
+	sleep 5
+	## CREATING NODES
+
+	for i in `seq 1 $nodes`;
+	do
+		#echo $i $racdirector
+		if [ $i = $racdirector ] 
+		then
+			echo "Creating $racname-node$racdirector (will launch the RAC installation)"
+			./createNode node$i $www_html $rac_disks $racname $network $nfs $nodes RACdirector 2>&1 >/dev/null  & 
+			sleep 5
+			#virt-viewer node$i &
+		else
+			echo "Creating $racname-node$i"
+			./createNode node$i $www_html $rac_disks $racname $network $nfs $nodes  2>&1 >/dev/null &
+			#virt-viewer node$i &
+		fi
+	done
+}
+
+sshpassinstalled(){
+ #task | show_dialog
+ mypackage=sshpass
+ isinstalled=$(rpm -qa |grep $mypackage)
+ mylength=$(echo $isinstalled | wc -c)
+ #echo $mylength
+ if [[ $mylength -lt 5 ]];
+ then
+        echo "Please Install $mypackage"
+        #sudo yum -y -q install $mypackage
+ fi
+}
+
+
+###############
+### MAIN #####
+##############
+
+clear
+
+SEC1=`date +%s`
+echo $RAC_INSTALLER_ROOT
+echo "RAC CREATION STARTED AT:" `date +%H:%M:%S`
+
+sshpassinstalled
+
+createNetworks
+createNFS
+sleep 3
+
+./awaitStorage $mynetwork $nfs
+createNodes
+./awaitNodes $mynetwork $nodes
+
+#$RAC_INSTALLER_ROOTbulkSnapshots.sh backup
+
+echo ""
+echo > ~/.ssh/known_hosts
+./runGridInstall18c.sh $mynetwork $racdirector 2>/dev/null
+
+echo ""
+isonline=$(./checkDB18c.sh $mynetwork $racdirector|wc -c)
+if [[ $isonline -gt 1500 ]];then
+	echo ""
+	echo > ~/.ssh/known_hosts
+	./runDBInstall18c.sh $mynetwork $racdirector 2>/dev/null
+else
+	echo "Cluster resources don't seem to be OK..."
+	exit
+fi
+
+
+echo ""
+./checkRAC18c.sh $mynetwork $racdirector
+
+SEC2=`date +%s`
+DIFFSEC=`expr ${SEC2} - ${SEC1}`
+
+echo -e "\n\n\n*** Elapsed time: `date +%H:%M:%S -ud @${DIFFSEC}`"
+echo -e "\n*** END OF 18c RAC INSTALLATION ***\n\n"
+
+
+
+## CREATING STORAGE SERVERS Snapshot
+#	for i in `seq 1 $nfs`;
+#	do
+#		echo "Creating Snapshot $racname-nfs${i}"
+#		virsh snapshot-create $racname-nfs$i
+#	done
+
+
+
+## CREATING NODES Snapshot
+
+#	for i in `seq 1 $nodes`;
+#	do
+#			echo "Creating Snapshot $racname-node$i"
+#			virsh snapshot-create $racname-node$i
+#	done
+
+kill $(ps aux | grep '[p]ython -m SimpleHTTPServer' | awk '{print $2}')
+
+
+
+
+# $RAC_INSTALLER_ROOTbulkSnapshots.sh backup
+
+exit

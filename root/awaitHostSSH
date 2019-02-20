@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#declare -A nodesstatus;
+
+mynodes = `cat $RAC_INSTALLER_ROOTnodestossh`
+
+for kk in `seq 1 $mynodes`;
+do
+ myvar+="$kk:"
+done
+
+IFS=':' read -r -a array <<< "$myvar"
+#echo "${#array[*]}"
+echo .
+echo "waiting for "
+printf "%s\n" "${array[@]}"
+echo "to be ready..."
+
+	while true
+	do
+	  for element in "${array[@]}"
+	  do
+		#echo "$element"
+		##exec 3> /dev/tcp/$element/22
+		nc -z $element 22
+		#perl -MIO::Socket::INET -e 'exit(! defined( IO::Socket::INET->new("$element:22")))'
+		if [ $? -ne 0 ]
+		then
+			# Do stuff here if example.com SSH is down
+			#echo "Can't not connect to $element [`date`]"
+			# nodesstatus["$element"]="Waiting"
+			#echo "nodesstatus["$element"]=${nodesstatus[$element]}"
+			sleep 3
+		else
+			exit
+	   fi
+	done #for
+
+done #while
+
+unset array
+
+exit
+

@@ -1,0 +1,30 @@
+#/!bin/bash
+#
+
+virsh list --all
+
+echo "deleting VM $1..."
+
+something = $(virsh snapshot-list $1|grep $1|awk '{print $1 }' 2>&1 >/dev/null)
+
+
+for i in $something; 
+do 
+virsh snapshot-delete $1 --snapshotname $i  2>&1 >/dev/null 
+rm -rf /var/lib/libvirt/qemu/snapshot/$1/$i.xml 2>&1 >/dev/null
+done
+
+virsh destroy $1 2>&1 >/dev/null
+
+virsh undefine $1 2>&1 >/dev/null
+
+for i in /etc/libvirt/qemu /var/lib/libvirt/qemu /var/lib/libvirt/images /var/log/libvirt/qemu;
+do
+	if [ ! -z $i  ]; then
+		rm -f $i/$1.*
+	fi
+done
+
+virsh list --all
+
+echo "OK"

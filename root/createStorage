@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# $1 nodename
+# $2 racname
+
+echo -en "creating VM $1..."
+
+virt-install \
+-n $1 \
+--description "$1" \
+--ram=2024 \
+--vcpus=2 \
+--cpu host \
+--os-variant oel6 \
+--accelerate \
+--hvm \
+--location=/var/www/html/OL6.5.iso \
+--graphics vnc \
+--disk path=/home/kvm/Storage/HDD/RAC-18c_disks/$1.img,format=qcow2,device=disk,size=300 \
+--disk path=/home/kvm/Storage/HDD/RAC-18c_disks/$1-disk1.img,format=qcow2,device=disk,size=50,perms=sh \
+--disk path=/home/kvm/Storage/HDD/RAC-18c_disks/$1-disk2.img,format=qcow2,device=disk,size=50,perms=sh \
+--disk path=/home/kvm/Storage/HDD/RAC-18c_disks/$1-disk3.img,format=qcow2,device=disk,size=50,perms=sh \
+--disk path=/home/kvm/Storage/HDD/RAC-18c_disks/$1-disk4.img,format=qcow2,device=disk,size=50,perms=sh \
+--initrd-inject=/var/www/html/Storage.cfg \
+--extra-args "ks=file:/Storage.cfg nodename=$1 racname=$2" 
+
+echo OK

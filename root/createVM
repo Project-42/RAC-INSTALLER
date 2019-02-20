@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo -en "creating VM $1..."
+
+virt-install \
+-n $1 \
+--description "$1" \
+--ram=6144 \
+--vcpus=2 \
+--cpu host \
+--os-variant oel6 \
+--accelerate \
+--hvm \
+--location=/var/www/html/OL6.8_x86_64.iso \
+--network network=NAT1,model=virtio \
+--graphics vnc \
+--disk path=/home/kvm/Storage/HDD/RAC-18c_disks/$1.qcow2,format=qcow2,device=disk,size=200 \
+--initrd-inject=/var/www/html/oracle.cfg \
+--extra-args "ks=file:/oracle.cfg" 
+
+echo OK

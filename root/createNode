@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# $1 name
+# $2 www_html
+# $3 rac_disks
+# $4 RAC name rac1, etc
+# $5 network NAT1, NAT2, etc
+# $6 NFS servers
+# $7 Total of nodes to create
+# $8 role RACdirector if it's the rac installer
+
+echo "creating $4-$1..."
+
+virt-install -q \
+--check all=off \
+-n $4-$1 \
+--description "$4-$1" \
+--vcpus=8 \
+--ram=16384 \
+--cpu host \
+--os-variant rhel6 \
+--accelerate \
+--hvm \
+--location=$2/OL6.5.iso \
+--network network=$5,model=virtio \
+--network network=$5-2,model=virtio \
+--network network=$5-3,model=virtio \
+--graphics vnc \
+--disk path=$3/$4-$1.img,format=qcow2,device=disk,size=200 \
+--initrd-inject=$2/Racnode.cfg \
+--extra-args "ks=file:/Racnode.cfg nodename=$1 racname=$4 network=$5 storage=$6 totalnodes=$7 role=$8" 
