@@ -21,7 +21,7 @@ virt-install -q \
 --os-variant rhel6 \
 --accelerate \
 --hvm \
---location=$2/OL6.5.iso \
+--location=$2/Oracle_Linux_7.6-V980739-01.iso \
 --network network=$5,model=virtio \
 --network network=$5-2,model=virtio \
 --network network=$5-3,model=virtio \
