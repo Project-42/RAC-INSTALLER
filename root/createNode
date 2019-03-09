@@ -15,10 +15,10 @@ virt-install -q \
 --check all=off \
 -n $4-$1 \
 --description "$4-$1" \
---vcpus=8 \
+--vcpus=10 \
 --ram=16384 \
 --cpu host \
---os-variant rhel6 \
+--os-variant rhel7 \
 --accelerate \
 --hvm \
 --location=$2/Oracle_Linux_7.6-V980739-01.iso \
@@ -26,6 +26,6 @@ virt-install -q \
 --network network=$5-2,model=virtio \
 --network network=$5-3,model=virtio \
 --graphics vnc \
---disk path=$3/$4-$1.img,format=qcow2,device=disk,size=200 \
+--disk path=$3/$4-$1.img,format=qcow2,device=disk,cache=none,size=200 \
 --initrd-inject=$2/Racnode.cfg \
 --extra-args "ks=file:/Racnode.cfg nodename=$1 racname=$4 network=$5 storage=$6 totalnodes=$7 role=$8" 

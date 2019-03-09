@@ -139,7 +139,7 @@ createNodes()
 	cd $rac_installer_root
 
 	echo "SimpleHTTPServer started"
-	sleep 5
+	sleep 20
 	## CREATING NODES
 
 	for i in `seq 1 $nodes`;
@@ -149,7 +149,7 @@ createNodes()
 		then
 			echo "Creating $racname-node$racdirector (will launch the RAC installation)"
 			./createNode node$i $www_html $rac_disks $racname $network $nfs $nodes RACdirector 2>&1 >/dev/null  & 
-			sleep 5
+			sleep 20
 			#virt-viewer node$i &
 		else
 			echo "Creating $racname-node$i"

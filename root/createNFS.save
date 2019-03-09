@@ -13,7 +13,7 @@ virt-install -q \
 --ram=2048 \
 --vcpus=2 \
 --cpu host \
---os-variant rhel6 \
+--os-variant rhel7 \
 --accelerate \
 --hvm \
 --location=~/RAC-INSTALLER/www_html/OL6.5.iso \
