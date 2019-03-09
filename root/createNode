@@ -15,7 +15,7 @@ virt-install -q \
 --check all=off \
 -n $4-$1 \
 --description "$4-$1" \
---vcpus=10 \
+--vcpus=8 \
 --ram=16384 \
 --cpu host \
 --os-variant rhel7 \
