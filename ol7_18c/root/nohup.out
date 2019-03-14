@@ -1,0 +1,353 @@
+[3;J[H[2J
+RAC CREATION STARTED AT: 20:46:08
+
+################################
+######### NETWORKS #############
+################################
+
+Network NAT1 already in use or not destroyed & undefined!
+
+################################
+######### NFS SERVERS ##########
+################################
+
+creating rac1-nfs1
+
+waiting for 
+192.168.1.111
+to be ready...
+Gdk-Message: 21:02:45.659: virt-viewer: Fatal IO error 11 (Resource temporarily unavailable) on X server localhost:10.0.
+
+[3;J[H[2J
+RAC CREATION STARTED AT: 21:08:46
+
+################################
+######### NETWORKS #############
+################################
+
+Creating Networks:
+NAT1    192.168.1.0/26  Public 
+NAT1-2  192.168.1.64/27 Private
+NAT1-3  192.168.1.96/27 Storage
+
+
+################################
+######### NFS SERVERS ##########
+################################
+
+creating rac1-nfs1
+
+waiting for 
+192.168.1.111
+to be ready...
+
+################################
+######### NODES ################
+################################
+
+
+################################
+######### NODES ################
+################################
+
+kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]
+kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]
+SimpleHTTPServer started
+SimpleHTTPServer started
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/runpy.py", line 162, in _run_module_as_main
+    "__main__", fname, loader, pkg_name)
+  File "/usr/lib64/python2.7/runpy.py", line 72, in _run_code
+    exec code in run_globals
+  File "/usr/lib64/python2.7/SimpleHTTPServer.py", line 220, in <module>
+    test()
+  File "/usr/lib64/python2.7/SimpleHTTPServer.py", line 216, in test
+    BaseHTTPServer.test(HandlerClass, ServerClass)
+  File "/usr/lib64/python2.7/BaseHTTPServer.py", line 595, in test
+    httpd = ServerClass(server_address, HandlerClass)
+  File "/usr/lib64/python2.7/SocketServer.py", line 420, in __init__
+    self.server_activate()
+  File "/usr/lib64/python2.7/SocketServer.py", line 439, in server_activate
+    self.socket.listen(self.request_queue_size)
+  File "/usr/lib64/python2.7/socket.py", line 224, in meth
+    return getattr(self._sock,name)(*args)
+socket.error: [Errno 98] Address already in use
+Creating rac1-node1 (will launch the RAC installation)
+Creating rac1-node1 (will launch the RAC installation)
+ERROR    Couldn't create storage volume 'rac1-node1.img': 'storage volume 'rac1-node1.img' exists already'
+Domain installation does not appear to have been successful.
+If it was, you can restart your domain by running:
+  virsh --connect qemu:///system start rac1-node1
+otherwise, please restart your installation.
+
+(virt-viewer:25565): Gtk-WARNING **: 21:35:58.141: cannot open display: localhost:10.0
+Creating rac1-node2
+Creating rac1-node2
+
+waiting for 
+192.168.1.11
+192.168.1.12
+to be ready...
+
+waiting for 
+192.168.1.11
+192.168.1.12
+to be ready...
+ERROR    Couldn't create storage volume 'rac1-node2.img': 'storage volume 'rac1-node2.img' exists already'
+Domain installation does not appear to have been successful.
+If it was, you can restart your domain by running:
+  virsh --connect qemu:///system start rac1-node2
+otherwise, please restart your installation.
+192.168.1.18 - - [09/Mar/2019 22:04:51] "GET /scriptInstallGRID18c-rac HTTP/1.1" 200 -
+192.168.1.18 - - [09/Mar/2019 22:04:51] "GET /scriptInstallDB18c-rac HTTP/1.1" 200 -
+192.168.1.18 - - [09/Mar/2019 22:04:51] "GET /sshUserSetup.expect HTTP/1.1" 200 -
+
+
+
+
+ssh: connect to host 192.168.1.11 port 22: No route to host
+ssh: connect to host 192.168.1.11 port 22: No route to host
+Cluster resources don't seem to be OK...
+Cluster resources don't seem to be OK...
+[3;J[H[2J
+RAC CREATION STARTED AT: 06:14:31
+
+################################
+######### NETWORKS #############
+################################
+
+Network NAT1 already in use or not destroyed & undefined!
+
+################################
+######### NFS SERVERS ##########
+################################
+
+creating rac1-nfs1
+ERROR    Guest name 'rac1-nfs1' is already in use.
+
+waiting for 
+192.168.1.111
+to be ready...
+
+################################
+######### NODES ################
+################################
+
+SimpleHTTPServer started
+Creating rac1-node1 (will launch the RAC installation)
+ERROR    Guest name 'rac1-node1' is already in use.
+Creating rac1-node2
+
+waiting for 
+192.168.1.11
+192.168.1.12
+to be ready...
+
+
+*** ------------------------------------ ***
+*** --- starting Oracle 18.0.0 setup --- ***
+*** ------------------------------------ ***
+
+ERROR    Guest name 'rac1-node2' is already in use.
+
+****** *** downloading GRID software -> /tmp 
+192.168.1.11 - - [10/Mar/2019 06:15:16] "GET /LINUX.X64_180000_grid_home.zip HTTP/1.1" 200 -
+
+****** *** downloading GRID response file -> /home/oracle 
+192.168.1.11 - - [10/Mar/2019 06:16:13] "GET /grid.rsp HTTP/1.1" 200 -
+
+****** *** extracting GRID software: /tmp/LINUX.X64_180000_grid_home.zip -> /u01/app/18.0.0/grid 
+.
+waiting for 
+rac1-node1
+rac1-node2
+to be ready...
+All nodes are ready!
+
+****** *** checking SSH passwordless 
+Host key verification failed.
+Host key verification failed.
+Host key verification failed.
+Host key verification failed.
+Trying to establish SSH connectivity...
+Permission denied, please try again.
+Permission denied, please try again.
+Permission denied (publickey,password).
+Trying to establish SSH connectivity...
+SSH connectivity successfull between RAC nodes!
+
+****** *** Beginning GRID 18.0.0 installation 
+Preparing...                          ########################################
+Updating / installing...
+cvuqdisk-1.0.10-1                     ########################################
+Launching Oracle Grid Infrastructure Setup Wizard...
+
+[WARNING] [INS-41812] OSDBA and OSASM are the same OS group.
+   CAUSE: The chosen values for OSDBA group and the chosen value for OSASM group are the same.
+   ACTION: Select an OS group that is unique for ASM administrators. The OSASM group should not be the same as the OS groups that grant privileges for Oracle ASM access, or for database administration.
+[WARNING] [INS-41874] Oracle ASM Administrator (OSASM) Group specified is same as the inventory group.
+   CAUSE: Operating system group oinstall specified for OSASM Group is same as the inventory group.
+   ACTION: It is not recommended to have OSASM group same as inventory group. Select any of the group other than the inventory group to avoid incorrect configuration.
+[WARNING] [INS-13013] Target environment does not meet some mandatory requirements.
+   CAUSE: Some of the mandatory prerequisites are not met. See logs for details. /u01/app/oraInventory/logs/GridSetupActions2019-03-10_06-21-59AM/gridSetupActions2019-03-10_06-21-59AM.log
+   ACTION: Identify the list of failed prerequisite checks from the log: /u01/app/oraInventory/logs/GridSetupActions2019-03-10_06-21-59AM/gridSetupActions2019-03-10_06-21-59AM.log. Then either from the log file or from installation manual find the appropriate configuration to meet the prerequisites and fix it manually.
+The response file for this session can be found at:
+ /u01/app/18.0.0/grid/install/response/grid_2019-03-10_06-21-59AM.rsp
+
+You can find the log of this install session at:
+ /u01/app/oraInventory/logs/GridSetupActions2019-03-10_06-21-59AM/gridSetupActions2019-03-10_06-21-59AM.log
+
+As a root user, execute the following script(s):
+	1. /u01/app/oraInventory/orainstRoot.sh
+	2. /u01/app/18.0.0/grid/root.sh
+
+Execute /u01/app/oraInventory/orainstRoot.sh on the following nodes: 
+[rac1-node2]
+Execute /u01/app/18.0.0/grid/root.sh on the following nodes: 
+[rac1-node1, rac1-node2]
+
+Run the script on the local node first. After successful completion, you can start the script in parallel on all other nodes.
+
+Successfully Setup Software with warning(s).
+As install user, execute the following command to complete the configuration.
+	/u01/app/18.0.0/grid/gridSetup.sh -executeConfigTools -responseFile /home/oracle/grid.rsp [-silent]
+
+
+
+****** *** Running /u01/app/oraInventory/orainstRoot.sh on rac1-node1 
+
+****** *** Running /u01/app/18.0.0/grid/root.sh on rac1-node1 
+Check /u01/app/18.0.0/grid/install/root_rac1-node1.raclab.local_2019-03-10_06-36-25-404177551.log for the output of root script
+
+****** *** Running /u01/app/oraInventory/orainstRoot.sh on rac1-node2 
+Changing permissions of /u01/app/oraInventory.
+Adding read,write permissions for group.
+Removing read,write,execute permissions for world.
+
+Changing groupname of /u01/app/oraInventory to oinstall.
+The execution of the script is complete.
+
+****** *** Running /u01/app/18.0.0/grid/root.sh on rac1-node2 
+Check /u01/app/18.0.0/grid/install/root_rac1-node2.raclab.local_2019-03-10_08-01-36-706295097.log for the output of root script
+
+****** *** Checking GRID 18.0.0 cluster and olsnodes  
+GRID is up and running!
+olsnodes=2 !
+
+
+
+##################################################
+### GRID total time: 01:53:53
+##################################################
+#
+
+
+
+****** *** downloading DB software -> /tmp 
+192.168.1.11 - - [10/Mar/2019 08:15:49] "GET /LINUX.X64_180000_db_home.zip HTTP/1.1" 200 -
+
+****** *** downloading DB response -> /home/oracle 
+192.168.1.11 - - [10/Mar/2019 08:18:28] "GET /db.rsp HTTP/1.1" 200 -
+
+****** *** downloading DBCA response -> /home/oracle 
+192.168.1.11 - - [10/Mar/2019 08:18:28] "GET /dbca.rsp HTTP/1.1" 200 -
+
+****** *** extracting DB: /tmp/LINUX.X64_180000_db_home.zip -> /u01/app/oracle/product/18.0.0/dbhome_1 
+.
+waiting for 
+rac1-node1
+rac1-node2
+to be ready...
+All nodes are ready!
+
+****** *** Beginning DB 18.0.0 installation and configuration 
+Launching Oracle Database Setup Wizard...
+
+[WARNING] [INS-13014] Target environment does not meet some optional requirements.
+   CAUSE: Some of the optional prerequisites are not met. See logs for details. /u01/app/oraInventory/logs/InstallActions2019-03-10_08-22-41AM/installActions2019-03-10_08-22-41AM.log
+   ACTION: Identify the list of failed prerequisite checks from the log: /u01/app/oraInventory/logs/InstallActions2019-03-10_08-22-41AM/installActions2019-03-10_08-22-41AM.log. Then either from the log file or from installation manual find the appropriate configuration to meet the prerequisites and fix it manually.
+The response file for this session can be found at:
+ /u01/app/oracle/product/18.0.0/dbhome_1/install/response/db_2019-03-10_08-22-41AM.rsp
+
+You can find the log of this install session at:
+ /u01/app/oraInventory/logs/InstallActions2019-03-10_08-22-41AM/installActions2019-03-10_08-22-41AM.log
+
+As a root user, execute the following script(s):
+	1. /u01/app/oracle/product/18.0.0/dbhome_1/root.sh
+
+Execute /u01/app/oracle/product/18.0.0/dbhome_1/root.sh on the following nodes: 
+[rac1-node1, rac1-node2]
+
+
+Successfully Setup Software with warning(s).
+
+****** *** Running /u01/app/oracle/product/18.0.0/dbhome_1/root.sh on rac1-node1 
+Check /u01/app/oracle/product/18.0.0/dbhome_1/install/root_rac1-node1.raclab.local_2019-03-10_08-38-24-659222814.log for the output of root script
+
+****** *** Running /u01/app/oracle/product/18.0.0/dbhome_1/root.sh on rac1-node2 
+Check /u01/app/oracle/product/18.0.0/dbhome_1/install/root_rac1-node2.raclab.local_2019-03-10_08-38-25-317927686.log for the output of root script
+
+****** *** Beginning DB 18.0.0 install  
+Prepare for db operation
+Failed to create directory "?/log" on "rac1-node1,rac1-node2", "/bin/chmod: cannot access ‘/?’: No such file or directory/bin/chmod: cannot access ‘/?’: No such file or directory ".
+/bin/chmod: cannot access ‘/?’: No such file or directory/bin/chmod: cannot access ‘/?’: No such file or directory 
+7% complete
+Copying database files
+27% complete
+Creating and starting Oracle instance
+28% complete
+31% complete
+35% complete
+37% complete
+40% complete
+Creating cluster database views
+41% complete
+53% complete
+Completing Database Creation
+57% complete
+59% complete
+60% complete
+Creating Pluggable Databases
+64% complete
+80% complete
+Executing Post Configuration Actions
+100% complete
+Database creation complete. For details check the logfiles at:
+ /u01/app/oracle/cfgtoollogs/dbca/rac1cdb1.
+Database Information:
+Global Database Name:rac1cdb1.raclab.local
+System Identifier(SID) Prefix:rac1cdb1
+Look at the log file "/u01/app/oracle/cfgtoollogs/dbca/rac1cdb1/rac1cdb1.log" for further details.
+
+****** *** Running /u01/app/oracle/product/18.0.0/dbhome_1/root.sh on rac1-node1 
+Check /u01/app/oracle/product/18.0.0/dbhome_1/install/root_rac1-node1.raclab.local_2019-03-10_11-09-48-256159791.log for the output of root script
+
+****** *** Running /u01/app/oracle/product/18.0.0/dbhome_1/root.sh on rac1-node2 
+Check /u01/app/oracle/product/18.0.0/dbhome_1/install/root_rac1-node2.raclab.local_2019-03-10_11-09-49-269930545.log for the output of root script
+
+##################################################
+### DB total time: 02:47:10
+##################################################
+#
+
+--------------------------------------------------------------------------------
+Name           Target  State        Server                   State details       
+--------------------------------------------------------------------------------
+Cluster Resources
+--------------------------------------------------------------------------------
+ora.rac1cdb1.db
+      1        ONLINE  ONLINE       rac1-node1               Open,HOME=/u01/app/o
+                                                             racle/product/18.0.0
+                                                             /dbhome_1,STABLE
+      2        ONLINE  ONLINE       rac1-node2               Open,HOME=/u01/app/o
+                                                             racle/product/18.0.0
+                                                             /dbhome_1,STABLE
+--------------------------------------------------------------------------------
+
+
+
+*** Elapsed time: 04:55:20
+
+*** END OF 18c RAC INSTALLATION ***
+
+
