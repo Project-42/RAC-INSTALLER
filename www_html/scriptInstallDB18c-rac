@@ -272,10 +272,9 @@ export ORACLE_SID=$ORACLE_SID$NODENUMBER
 export ORACLE_BASE=${DB_ORACLE_BASE}
 export PATH=${DB_ORACLE_HOME}/bin:$PATH
 " > $myfile
-  echo "$ORACLE_SID:$DB_ORACLE_HOME:N" >> /etc/oratab
   chown ${ORAOWNER}:${ORAINSTGROUP} $myfile
   chmod +x $myfile
-
+  echo ORACLE_SID$NODENUMBER:$DB_ORACLE_HOME:N >> /etc/oratab
 }
 
 

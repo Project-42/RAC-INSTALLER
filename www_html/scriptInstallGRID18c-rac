@@ -301,6 +301,7 @@ export PATH=${GRID_ORACLE_HOME}/bin:$PATH
   echo "$ORACLE_SID:$GRID_ORACLE_HOME:N" >> /etc/oratab
   chown ${ORAOWNER}:${ORAINSTGROUP} $myfile
   chmod +x $myfile
+  echo `ps -ef |grep asm_pmon |grep -v grep |awk -F "_" '{print $NF}'`:$DB_ORACLE_HOME:N >> /etc/oratab
 }
 
 _checkGridUp(){
