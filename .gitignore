@@ -1,6 +1,6 @@
 *.iso
-www_html/*.iso
+/home/arthur/RAC-INSTALLER/ol7_18c/www_html/*.iso
 *.zip
-www_html/*.zip
+/home/arthur/RAC-INSTALLER/ol7_18c/www_html/*.zip
 *.img
-RAC_disks/*.img
+/home/arthur/RAC-INSTALLER/ol7_18c/www_html/*.img
