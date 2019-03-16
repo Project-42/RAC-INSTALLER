@@ -1,7 +1,7 @@
 #!/bin/bash
 #Scripts, Software and Disks location
 #Set the location of the 'RAC-INSTALLER'
-rac_installer=$HOME/RAC-INSTALLER
+rac_installer=$HOME/RAC-INSTALLER/ol7_18c
 #You can change the location of the following elements
 rac_installer_root=$rac_installer/root
 www_html=$rac_installer/www_html
