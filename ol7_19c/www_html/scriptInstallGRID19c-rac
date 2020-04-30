@@ -1,0 +1,381 @@
+#!/bin/bash
+
+##################################################
+#         CONFIGURATION SECTION                  #
+##################################################
+
+myracname=$1
+mynetwork=$2
+SOURCEPATH=/tmp
+SOURCE2=LINUX.X64_193000_grid_home.zip
+SOURCE4=grid.rsp
+
+ORAOWNER=oracle
+ORAINSTGROUP=oinstall
+TOPDIR=/u01
+VERSION=19.3.0
+ORADIR=${TOPDIR}/app/oraInventory
+GRID_ORACLE_BASE=/u01/app/grid
+GRID_ORACLE_HOME=/u01/app/$VERSION/grid
+NFS_STORAGE=/u01/oradata/storage
+NODENAME=$(uname -n)
+NODENUMBER=$(echo ${NODENAME: -1})
+COUNTER=0
+
+myoracledir=/home/oracle
+
+gridnodes=0
+
+# nodes short names
+mynodes=
+for item in `cat /root/nodestossh`;
+do
+ mynodes+="$item,"
+ (( gridnodes++ ))
+done
+mynodes=${mynodes%?};
+
+# nodes short names
+mydbnodes=
+for item in `cat /root/nodestossh`;
+do
+ mydbnodes+="$item.raclab.local,"
+done
+mydbnodes=${mydbnodes%?};
+
+# nodes with FQDN
+mynodelist=
+for item in `cat /root/nodestossh`;
+do
+ mynodelist+="$item.raclab.local:$item-vip.raclab.local:HUB,"
+done
+mynodelist=${mynodelist%?};
+
+# NFS disks -- ONLY 5 DISKS USED FOR INITIAL DATA DISKGROUP
+mydisks=
+datadisks=( /u01/oradata/nfs*/nfs*-disk[1-5] )
+for f in "${datadisks[@]}"; do
+ mydisks+="$f,"
+done
+mydisks=${mydisks%?};
+  
+##################################################
+#        MAIN SECTION                            # 
+##################################################
+
+
+# print the header
+_header() {
+	#clear
+	echo ""
+	echo "*** ------------------------------------ ***"
+	echo "*** --- starting Oracle ${VERSION} setup --- ***"
+	echo "*** ------------------------------------ ***"
+	echo ""
+}
+
+# print simple log messages to screen
+_log() {
+	echo ""
+	echo "****** $1 "
+}
+
+
+# check for the current os user
+_check_user() {
+	if [ $(id -un) != "${1}" ]; then
+		_log "you must run this as ${1}"
+		exit 0
+	fi
+}
+
+_preinstall(){
+	# _log "*** preinstall "
+	rm -rf /tmp/*.zip
+	rm -rf $GRID_ORACLE_BASE/*
+	rm -rf $GRID_ORACLE_HOME/*
+	rm -rf ${ORADIR}/*
+
+	
+	if [ ! -d $GRID_ORACLE_HOME ]; then
+		mkdir -p $GRID_ORACLE_HOME
+		chmod 775 -R $GRID_ORACLE_HOME
+		chown oracle:oinstall -R $GRID_ORACLE_HOME
+	fi
+}
+
+
+_download_sources(){
+	server=192.168.${mynetwork}.1
+
+	_log "*** downloading GRID software -> ${SOURCEPATH}"
+	wget -q http://${server}:8042/${SOURCE2} -P ${SOURCEPATH}
+
+	_log "*** downloading GRID response file -> $myoracledir"
+	wget -q http://${server}:8042/${SOURCE4} -P $myoracledir
+
+	chown ${ORAOWNER}:${ORAINSTGROUP} ${myoracledir}/*.rsp
+	chmod 644 ${myoracledir}/*.rsp
+}
+
+
+# extract the source files
+_extract_sources(){
+	# GRID
+	_log "*** extracting GRID software: ${SOURCEPATH}/${SOURCE2} -> ${GRID_ORACLE_HOME}"
+	 su - ${ORAOWNER} -c "unzip -o -q ${SOURCEPATH}/${SOURCE2} -d ${GRID_ORACLE_HOME}"
+}
+
+
+_awaitHostSSH(){
+	myvar=
+	for kk in `cat /root/nodestossh`;
+	do
+		myvar+="$kk:"
+	done
+
+	IFS=':' read -r -a array <<< "$myvar"
+	echo .
+	echo "waiting for "
+	printf "%s\n" "${array[@]}"
+	echo "to be ready..."
+	while true
+	do
+		for element in "${array[@]}"
+	  do
+			nc -z $element 22 > /dev/null
+			if [ $? -ne 0 ]
+			then
+				echo "$element is unreachable yet"
+				sleep 5
+			else
+				(( COUNTER++ ))
+				if [ ${#array[@]} == $COUNTER ];then
+					echo "All nodes are ready!"
+					return 1
+				fi
+			fi
+		done #for
+	done #while
+	unset array
+}
+
+_copySSHkey(){
+
+  tn=0
+  mynodes=
+  mynodename=`uname -n|cut -d. -f1`
+  for kk in `cat /root/nodestossh`;
+  do
+    mynodes+="$kk "
+    ((tn+=1))
+  done
+  mynodes=${mynodes%?};
+  
+  TOTAL=0
+  totalnodes=$((2*$tn))
+   
+  _log "*** checking SSH passwordless"
+  /root/sshUserSetup.expect root Welcome1 $mynodes 2>&1 >/dev/null
+  /root/sshUserSetup.expect oracle Welcome1 $mynodes 2>&1 >/dev/null
+  while [ $TOTAL -lt $totalnodes ]
+  do
+    for kk in `cat /root/nodestossh`;
+    do
+      #echo -n "root@$kk date "
+      ssh root@$kk date 2>&1 >/dev/null
+      if [ "$?" == "0" ];then
+        ((TOTAL+=1))
+      fi
+      
+      ssh oracle@$kk date 2>&1 >/dev/null
+      if [ "$?" == "0" ];then
+        ((TOTAL+=1))
+        #echo "oracle@$kk $TOTAL "
+      fi
+    done #for
+    
+    if [ $TOTAL -lt $totalnodes ];then
+      echo "Trying to establish SSH connectivity..."
+      TOTAL=0
+      /root/sshUserSetup.expect root Welcome1 $mynodes 2>&1 >/dev/null
+      /root/sshUserSetup.expect oracle Welcome1 $mynodes 2>&1 >/dev/null
+    else
+      echo "SSH connectivity successfull between RAC nodes!"
+    fi
+    
+  done    
+  unset array
+}
+
+################
+##### GRID #####
+################
+
+_customGridRsp(){
+
+  myoraclefile=grid.rsp
+	
+	# no failed group configured, left empty
+  mydiskswithfailedgroups=
+  otherdatadisks=( /u01/oradata/nfs*/* )
+  for f in "${otherdatadisks[@]}"; do
+		mydiskswithfailedgroups+="$f,,"
+  done
+  mydiskswithfailedgroups=${mydiskswithfailedgroups%?};
+
+  sed -i "/INVENTORY_LOCATION=/c\INVENTORY_LOCATION=${ORADIR}" ${myoracledir}/${myoraclefile}
+
+  sed -i "/ORACLE_BASE=/c\ORACLE_BASE=${GRID_ORACLE_BASE}" ${myoracledir}/${myoraclefile}
+  
+  lineNo=75
+  var=oracle.install.option=CRS_CONFIG
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+  
+  lineNo=135
+  var=oracle.install.crs.config.gpnp.scanName=rac${mynetwork}-scan
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+  
+  lineNo=179
+  var=oracle.install.crs.config.clusterName=rac${mynetwork}-cluster
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+  
+  lineNo=255
+  var=oracle.install.crs.config.clusterNodes=$mynodelist
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+  lineNo=412
+  var=oracle.install.asm.diskGroup.disks=$mydiskswithfailedgroups
+  sed -i "${lineNo}s#.*#$var#" ${myoracledir}/${myoraclefile}
+
+  lineNo=424
+  var=oracle.install.asm.diskGroup.disks=$mydisks
+  sed -i "${lineNo}s#.*#$var#" ${myoracledir}/${myoraclefile}
+
+  lineNo=271
+  var=oracle.install.crs.config.networkInterfaceList=eth0:192.168.${mynetwork}.0:1,eth1:192.168.${mynetwork}.64:2,eth2:192.168.${mynetwork}.96:4
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+  chown ${ORAOWNER}:${ORAINSTGROUP} ${myoracledir}/${myoraclefile}
+  chmod 644 ${myoracledir}/${myoraclefile}
+}
+
+_installGrid(){
+  _log "*** Beginning GRID ${VERSION} installation"
+  
+  rpm -ivh ${GRID_ORACLE_HOME}/cv/rpm/cvuqdisk-1.0.10-1.rpm
+  
+  chmod 775 -R ${TOPDIR}
+  chmod 0660 -R ${TOPDIR}/oradata/nfs*/*
+  chown ${ORAOWNER}:${ORAINSTGROUP} -R ${TOPDIR}
+
+  su - ${ORAOWNER} -c "${GRID_ORACLE_HOME}/gridSetup.sh \
+  -silent \
+  -waitForCompletion \
+  -ignorePrereqFailure \
+  -responseFile ${myoracledir}/grid.rsp"
+  
+  for item in `cat /root/nodestossh`;
+  do
+    _log "*** Running ${ORADIR}/orainstRoot.sh on $item"
+    ssh root@$item ${ORADIR}/orainstRoot.sh
+    _log "*** Running ${GRID_ORACLE_HOME}/root.sh on $item"
+    ssh root@$item ${GRID_ORACLE_HOME}/root.sh
+  done
+}
+
+_postInstallGrid(){
+  su - ${ORAOWNER} -c "${GRID_ORACLE_HOME}/gridSetup.sh \
+  -silent \
+  -executeConfigTools \
+  -responseFile /home/oracle/grid.rsp"
+}
+
+_installGridEnv(){
+  myfile=${myoracledir}/grid19c.env
+  echo "export ORACLE_HOME=${GRID_ORACLE_HOME}
+export ORACLE_SID=+ASM${NODENUMBER}
+export ORACLE_BASE=${GRID_ORACLE_BASE}
+export PATH=${GRID_ORACLE_HOME}/bin:$PATH
+  " > $myfile
+  chown ${ORAOWNER}:${ORAINSTGROUP} $myfile
+  chmod +x $myfile
+  echo `ps -ef |grep asm_pmon |grep -v grep |awk -F "_" '{print $NF}'`:$GRID_ORACLE_HOME:N >> /etc/oratab
+}
+
+_checkGridUp(){
+	## check crsctl returns 0 and olsnodes are the same as nodes passed with the -n parameter
+  _log "*** Checking GRID ${VERSION} cluster and olsnodes "
+
+  gridup=$(su - ${ORAOWNER} -c ". grid19c.env;crsctl stat res > /dev/null  && echo ok || wrong")
+  while [ "$gridup" != "ok" ];
+  do
+	_log "checking cluster connectivity "
+        gridup=$(su - ${ORAOWNER} -c ". grid19c.env;crsctl stat res > /dev/null  && echo ok || wrong")
+	sleep 1
+  done
+  echo "GRID is up and running!"
+
+  myretries=0
+  whatnodes=$(su - ${ORAOWNER} -c ". grid19c.env;olsnodes|wc -l")
+  while [ $whatnodes -lt $gridnodes ];
+  do
+	  if [ $myretries -gt 5 ];
+	  then 
+		  exit
+	  else
+		  (( myretries++ ))
+	fi;
+   whatnodes=$(su - ${ORAOWNER} -c ". grid19c.env;olsnodes|wc -l")
+   sleep 1
+   echo "checking olsnodes...gridnodes=$gridnodes - whatnodes=$whatnodes"
+  done
+
+
+ #whatnodes=
+ ## while [ "$whatnodes" != "$mynodes" ];
+ # do
+  #              whatnodes=$(su - ${ORAOWNER} -c ". grid19c.env;olsnodes|awk -vORS=, '{ print $1 }' | sed 's/,$/\n/'")
+   #     sleep 1
+#	echo "checking olsnodes..."
+#  done
+
+echo -e "olsnodes=$whatnodes !\n\n"
+}
+
+
+########################
+######## MAIN ##########
+########################
+
+_header
+_check_user "root"
+_preinstall
+_download_sources
+_extract_sources
+_awaitHostSSH
+_copySSHkey
+
+SEC1=`date +%s`
+### GRID ###
+_customGridRsp
+_installGrid
+# avoid postInstallGrid not to install the -MGMNT instance
+#_postInstallGrid
+_installGridEnv
+
+# waits for cluster resources to be ready
+_checkGridUp
+
+# get rid of response files
+#rm -f ${myoracledir}/*.rsp
+
+SEC2=`date +%s`
+DIFFSEC=`expr ${SEC2} - ${SEC1}`
+echo "
+##################################################
+### GRID total time: `date +%H:%M:%S -ud @${DIFFSEC}`
+##################################################
+#"
+
+exit

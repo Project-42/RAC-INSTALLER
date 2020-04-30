@@ -1,0 +1,12 @@
+#!/bin/bash
+
+
+#now=$(date +"%d_%b_%Y_%H:%M:%S")
+mynum=$(date +"%s")
+
+echo -n "creating snapshot $1_$mynum for VM $1..."
+
+mydescription="$1 snapshot"
+virsh snapshot-create-as --domain $1 --name "$1_$mynum" --description "$mydescription"
+
+echo OK

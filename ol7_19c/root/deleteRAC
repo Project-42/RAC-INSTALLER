@@ -1,0 +1,25 @@
+#!/bin/bash
+RAC_INSTALLER_ROOT=/root/RAC-INSTALLER/root
+
+
+if [ $# -eq 0 ]; then
+    echo "Please provide RAC number like this: deleteRAC 1"
+    exit 1
+fi
+
+pkill -f create
+
+for i in {1..10}
+do
+$RAC_INSTALLER_ROOT/deleteVM rac$1-node$i > /dev/null
+$RAC_INSTALLER_ROOT/deleteVM rac$1-nfs$i > /dev/null
+done
+
+
+$RAC_INSTALLER_ROOT/deleteNetwork NAT$1  > /dev/null
+
+
+#rm -rf /var/lib/libvirt/qemu/snapshot/* > /dev/null
+
+virsh list --all
+virsh net-list

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# $1 subnet
+# $2 number of DB nodes
+
+#declare -A nodesstatus;
+myvar2=
+for kk in `seq 1 $2`;
+do
+ myvar2+="192.168.$1.1$kk:"
+done
+myvar2=${myvar2%?};
+
+total=0
+
+IFS=':' read -r -a array2 <<< "$myvar2"
+#echo "${#array[*]}"
+echo ""
+echo "waiting for "
+printf "%s\n" "${array2[@]}"
+echo "to be ready..."
+
+	while true
+	do
+	  for element in "${array2[@]}"
+	  do
+		nc -z $element 22 2>&1 >/dev/null
+		if [ $? -ne 0 ]
+		then
+			sleep 10
+		else
+			((total++))
+			#echo $element $total
+			if [ $total -ge $2 ];then
+				exit
+			fi
+	        fi
+	done #for
+
+done #while
+
+unset array2
+
+exit
+

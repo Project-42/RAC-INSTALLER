@@ -1,0 +1,40 @@
+#!/bin/bash
+
+virsh net-destroy $1
+virsh net-undefine $1
+virsh net-autostart $1 --disable
+rm -f /etc/libvirt/qemu/networks/$1.xml
+rm -f /etc/libvirt/qemu/networks/autostart/$1.xml
+rm -f /var/lib/libvirt/dnsmasq/$1.addnhosts
+rm -f /var/lib/libvirt/dnsmasq/$1.hostsfile
+rm -f /var/lib/libvirt/dnsmasq/$1.leases
+rm -f /var/lib/libvirt/network/$1.xml
+rm -f /var/run/libvirt/network/$1.pid
+rm -f /var/lib/libvirt/network/$1.addnhosts
+
+
+virsh net-destroy $1-2
+virsh net-undefine $1-2
+virsh net-autostart $1-2 --disable
+rm -f /etc/libvirt/qemu/networks/$1-2.xml
+rm -f /etc/libvirt/qemu/networks/autostart/$1-2.xml
+rm -f /var/lib/libvirt/dnsmasq/$1-2.addnhosts
+rm -f /var/lib/libvirt/dnsmasq/$1-2.hostsfile
+rm -f /var/lib/libvirt/dnsmasq/$1-2.leases
+rm -f /var/lib/libvirt/network/$1-2.xml
+rm -f /var/run/libvirt/network/$1-2.pid
+
+
+
+
+virsh net-destroy $1-3
+virsh net-undefine $1-3
+virsh net-autostart $1-3 --disable
+rm -f /etc/libvirt/qemu/networks/$1-3.xml
+rm -f /etc/libvirt/qemu/networks/autostart/$1-3.xml
+rm -f /var/lib/libvirt/dnsmasq/$1-3.addnhosts
+rm -f /var/lib/libvirt/dnsmasq/$1-3.hostsfile
+rm -f /var/lib/libvirt/dnsmasq/$1-3.leases
+rm -f /var/lib/libvirt/network/$1-3.xml
+rm -f /var/run/libvirt/network/$1-3.pid
+

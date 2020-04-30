@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# $1 nodename
+# $2 racname
+# $3 network
+# $4 www_html
+# $5 rac_disks
+
+echo -en "creating VM $1..."
+
+virt-install -q \
+--check all=off \
+-n $2-$1 \
+--description "$2-$1" \
+--ram=2048 \
+--vcpus=2 \
+--cpu host \
+--os-variant rhel7 \
+--accelerate \
+--hvm \
+--location=$4/Oracle_Linux_7.6-V980739-01.iso \
+--network network=$3-3,model=virtio \
+--graphics vnc \
+--disk path=$5/$2-$1.img,format=qcow2,device=disk,size=300 \
+--initrd-inject=$4/nfs.cfg \
+--extra-args "ks=file:/nfs.cfg nodename=$1 racname=$2 network=$3"

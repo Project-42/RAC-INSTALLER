@@ -1,0 +1,309 @@
+#!/bin/bash
+
+##################################################
+#         CONFIGURATION SECTION                  #
+##################################################
+
+myracname=$1
+mynetwork=$2
+SOURCEPATH=/tmp
+SOURCE1=LINUX.X64_193000_db_home.zip
+SOURCE3=db.rsp
+SOURCE5=dbca.rsp
+
+ORAOWNER=oracle
+ORAINSTGROUP=oinstall
+TOPDIR=/u01
+VERSION=19.3.0
+ORADIR=${TOPDIR}/app/oraInventory
+ORACLE_SID=${myracname}cdb1
+DB_GLOBALNAME=${myracname}CDB1
+DB_ORACLE_BASE=/u01/app/oracle
+DB_ORACLE_HOME=${TOPDIR}/app/oracle/product/${VERSION}/dbhome_1
+NFS_STORAGE=/u01/oradata/storage
+NODENAME=$(uname -n)
+NODENUMBER=$(echo ${NODENAME: -1})
+COUNTER=0
+
+myoracledir=/home/oracle
+
+
+# nodes short names
+mynodes=
+for item in `cat /root/nodestossh`;
+do
+ mynodes+="$item,"
+done
+mynodes=${mynodes%?};
+
+# nodes short names
+mydbnodes=
+for item in `cat /root/nodestossh`;
+do
+ mydbnodes+="$item.raclab.local,"
+done
+mydbnodes=${mydbnodes%?};
+
+# nodes with FQDN
+mynodelist=
+for item in `cat /root/nodestossh`;
+do
+ mynodelist+="$item.raclab.local:$item-vip.raclab.local:HUB,"
+done
+mynodelist=${mynodelist%?};
+
+# NFS disks
+mydisks=
+datadisks=( /u01/oradata/nfs*/* )
+for f in "${datadisks[@]}"; do
+ mydisks+="$f,"
+done
+mydisks=${mydisks%?};
+  
+
+# print simple log messages to screen
+_log() {
+	echo ""
+	echo "****** $1 "
+}
+
+
+# check for the current os user
+_check_user() {
+	if [ $(id -un) != "${1}" ]; then
+		_log "you must run this as ${1}"
+		exit 0
+	fi
+}
+
+
+_download_sources(){
+	mkdir -p ${DB_ORACLE_HOME} ${DB_ORACLE_BASE}
+	chmod 775 -R ${DB_ORACLE_HOME} ${DB_ORACLE_BASE}
+	chown ${ORAOWNER}:${ORAINSTGROUP} -R ${DB_ORACLE_HOME} ${DB_ORACLE_BASE}
+	
+	if [ ! -d $DB_ORACLE_HOME ]; then
+		mkdir -p $DB_ORACLE_HOME
+		chmod 775 -R $DB_ORACLE_HOME
+		chown ${ORAOWNER}:${ORAINSTGROUP} -R $DB_ORACLE_HOME
+	fi
+	
+	if [ ! -d $DB_ORACLE_BASE ]; then
+		mkdir -p $DB_ORACLE_BASE
+		chmod 775 -R $DB_ORACLE_BASE
+		chown ${ORAOWNER}:${ORAINSTGROUP} -R $DB_ORACLE_BASE
+	fi
+	
+	server=192.168.${mynetwork}.1
+
+	_log "*** downloading DB software -> ${SOURCEPATH}"
+	wget -q http://${server}:8042/${SOURCE1} -P ${SOURCEPATH}
+
+	_log "*** downloading DB response -> $myoracledir"
+	wget -q http://${server}:8042/${SOURCE3} -P $myoracledir
+
+	_log "*** downloading DBCA response -> $myoracledir"
+	wget -q http://${server}:8042/${SOURCE5} -P $myoracledir
+
+	chown ${ORAOWNER}:${ORAINSTGROUP} ${myoracledir}/*.rsp
+	chmod 644 ${myoracledir}/*.rsp
+}
+
+
+# extract the source files
+_extract_sources(){
+	# DB
+	_log "*** extracting DB: ${SOURCEPATH}/${SOURCE1} -> ${DB_ORACLE_HOME}"
+	su - ${ORAOWNER} -c "unzip -o -q ${SOURCEPATH}/${SOURCE1} -d ${DB_ORACLE_HOME}"
+}
+
+
+_awaitHostSSH(){
+	myvar=
+	for kk in `cat /root/nodestossh`;
+	do
+		myvar+="$kk:"
+	done
+
+	IFS=':' read -r -a array <<< "$myvar"
+	echo .
+	echo "waiting for "
+	printf "%s\n" "${array[@]}"
+	echo "to be ready..."
+	while true
+	do
+		for element in "${array[@]}"
+	  do
+			nc -z $element 22 > /dev/null
+			if [ $? -ne 0 ]
+			then
+				echo "$element is unreachable yet"
+				sleep 5
+			else
+				(( COUNTER++ ))
+				if [ ${#array[@]} == $COUNTER ];then
+					echo "All nodes are ready!"
+					return 1
+				fi
+			fi
+		done #for
+	done #while
+	unset array
+}
+
+
+################
+### DATABASE ###
+################
+
+_customDBRsp(){
+
+  myoraclefile=db.rsp
+
+  lineNo=118
+  var=oracle.install.db.CLUSTER_NODES=$mynodes
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+	lineNo=139
+	var=oracle.install.db.config.starterdb.globalDBName=${myracname}cdb.raclab.local
+	sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+	lineNo=144
+	var=oracle.install.db.config.starterdb.SID=${myracname}cdb1
+	sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+	lineNo=156
+	var=oracle.install.db.config.PDBName=${myracname}pdb1
+	sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+	chown ${ORAOWNER}:${ORAINSTGROUP} ${myoracledir}/${myoraclefile}
+	#chmod +x $myfile
+	#chown oracle:oinstall /home/oracle/grid.rsp
+	chmod 644 ${myoracledir}/${myoraclefile}
+}
+
+
+_customDBCArsp(){
+
+  myoraclefile=dbca.rsp
+  mypdbname=${ORACLE_SID}pdb1
+
+  lineNo=32
+  var=gdbName=${ORACLE_SID}.raclab.local
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+  lineNo=42
+  var=sid=${ORACLE_SID}
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+  lineNo=182
+  var=pdbName=${mypdbname}
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+  lineNo=213
+  var=nodelist=${mynodes}
+  sed -i "${lineNo}s/.*/$var/" ${myoracledir}/${myoraclefile}
+
+  sed -i "/variables=/c\variables=ORACLE_BASE_HOME=${DB_ORACLE_HOME},DB_UNIQUE_NAME=${ORACLE_SID},ORACLE_BASE=${DB_ORACLE_BASE},PDB_NAME=pdb1,DB_NAME=${ORACLE_SID},ORACLE_HOME=${DB_ORACLE_HOME},SID=${ORACLE_SID}" ${myoracledir}/${myoraclefile}
+
+sed -i "/initParams=/c\initParams=${ORACLE_SID}1.undo_tablespace=UNDOTBS1,${ORACLE_SID}2.undo_tablespace=UNDOTBS2,sga_target=2394MB,db_block_size=8192BYTES,cluster_database=true,family:dw_helper.instance_mode=read-only,nls_language=ENGLISH,dispatchers=(PROTOCOL=TCP) (SERVICE=${ORACLE_SID}XDB),diagnostic_dest=${ORACLE_BASE},remote_login_passwordfile=exclusive,db_create_file_dest=+DATA/{DB_UNIQUE_NAME}/,audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump,processes=320,pga_aggregate_target=799MB,${ORACLE_SID}1.thread=1,${ORACLE_SID}2.thread=2,nls_territory=UNITED KINGDOM,local_listener=-oraagent-dummy-,open_cursors=300,db_domain=raclab.local,compatible=19.3.0,db_name=${ORACLE_SID},${ORACLE_SID}1.instance_number=1,${ORACLE_SID}2.instance_number=2,audit_trail=db" ${myoracledir}/${myoraclefile}
+
+
+  chown ${ORAOWNER}:${ORAINSTGROUP} ${myoracledir}/${myoraclefile}
+  #chmod +x $myfile
+  #chown oracle:oinstall /home/oracle/grid.rsp
+  chmod 644 ${myoracledir}/${myoraclefile}
+}
+
+
+_installConfig_cdb_pdb(){
+	_log "*** Beginning DB ${VERSION} installation and configuration"
+
+	echo "oracle.assistants.asm|S_ASMPASSWORD=Welcome1
+	oracle.assistants.asm|S_ASMMONITORPASSWORD=Welcome1
+	oracle.assistants.server|S_SYSPASSWORD=Welcome1
+	oracle.assistants.server|S_SYSTEMPASSWORD=Welcome1
+	oracle.assistants.server|S_DBSNMPPASSWORD=Welcome1
+	oracle.assistants.server|S_PDBADMINPASSWORD=Welcome1
+	oracle.assistants.server|S_EMADMINPASSWORD=Welcome1
+	oracle.assistants.server|S_ASMSNMPPASSWORD=Welcome1
+	" > ${myoracledir}/cfgrsp.properties
+	chown ${ORAOWNER}:${ORAINSTGROUP} ${myoracledir}/cfgrsp.properties
+
+	su - ${ORAOWNER} -c "${DB_ORACLE_HOME}/runInstaller \
+	-silent \
+	-ignorePrereqFailure \
+	-responseFile ${myoracledir}/db.rsp"
+
+	for item in `cat /root/nodestossh`;
+	do
+	_log "*** Running ${DB_ORACLE_HOME}/root.sh on $item"
+	ssh root@$item ${DB_ORACLE_HOME}/root.sh
+	done
+
+	#su - ${ORAOWNER} -c "${GRIDDIR}/cfgtoollogs/configToolAllCommands RESPONSE_FILE=${myoracledir}/cfgrsp.properties"
+
+	#rm -f ${myoracledir}/*.rsp
+
+}
+
+
+
+_installDB(){
+  _log "*** Beginning DB ${VERSION} install "
+  
+  su - ${ORAOWNER} -c "${DB_ORACLE_HOME}/bin/dbca \
+  -silent \
+  -ignorePreReqs \
+  -createDatabase \
+  -responseFile ${myoracledir}/dbca.rsp"
+  
+  for item in `cat /root/nodestossh`;
+  do
+  _log "*** Running ${DB_ORACLE_HOME}/root.sh on $item"
+  ssh root@$item ${DB_ORACLE_HOME}/root.sh
+  done
+}
+
+_installDBEnv(){
+  myfile=${myoracledir}/db19c.env
+  echo "export ORACLE_HOME=${DB_ORACLE_HOME}
+export ORACLE_SID=$ORACLE_SID$NODENUMBER
+export ORACLE_BASE=${DB_ORACLE_BASE}
+export PATH=${DB_ORACLE_HOME}/bin:$PATH
+" > $myfile
+  chown ${ORAOWNER}:${ORAINSTGROUP} $myfile
+  chmod +x $myfile
+  echo ORACLE_SID$NODENUMBER:$DB_ORACLE_HOME:N >> /etc/oratab
+}
+
+
+#######################
+######## MAIN #########
+#######################
+
+_check_user "root"
+_download_sources
+_extract_sources
+_awaitHostSSH
+
+SEC1=`date +%s`
+### DB ###
+_customDBRsp
+_installConfig_cdb_pdb
+_customDBCArsp
+_installDB
+_installDBEnv
+
+# get rid of response files
+#rm -f ${myoracledir}/*.rsp
+
+SEC2=`date +%s`
+DIFFSEC=`expr ${SEC2} - ${SEC1}`
+echo "
+##################################################
+### DB total time: `date +%H:%M:%S -ud @${DIFFSEC}`
+##################################################
+#"
+
+exit

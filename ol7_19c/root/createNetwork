@@ -1,0 +1,141 @@
+#!/bin/bash
+
+## PUBLIC NETWORK:w
+
+mynetwork=`echo $1|grep -o '.\{1\}$'`
+myracid=`echo $2|grep -o '.\{1\}$'`
+mac1=`date|md5sum|fold -w 2 | head -n 1`
+myuuid=$(uuidgen)
+
+
+echo "<network>
+<name>$1</name>
+<uuid>$myuuid</uuid>
+<forward mode='nat'/>
+<nat>
+      <port start='1024' end='65535'/>
+    </nat>
+<bridge name='virbr$mynetwork' stp='on' delay='0' />
+<mac address='52:54:00:$mac1:$mac1:$mac1'/>
+<domain name='raclab.local'/>
+<dns forwardPlainNames='no'>
+<host ip='192.168.$mynetwork.51'><hostname>rac$mynetwork-scan</hostname><hostname>rac-scan.raclab.local</hostname></host>
+<host ip='192.168.$mynetwork.52'><hostname>rac$mynetwork-scan</hostname><hostname>rac-scan.raclab.local</hostname></host>
+<host ip='192.168.$mynetwork.53'><hostname>rac$mynetwork-scan</hostname><hostname>rac-scan.raclab.local</hostname></host>" > /var/lib/libvirt/network/$1.xml
+
+for i in `seq 1 $3`
+do
+echo "<host ip='192.168.$mynetwork.1$i'><hostname>$2-node$i-pub</hostname><hostname>$2-node$i.raclab.local</hostname></host>
+<host ip='192.168.$mynetwork.2$i'><hostname>$2-node$i-vip</hostname><hostname>$2-node$i-vip.raclab.local</hostname></host>" >> /var/lib/libvirt/network/$1.xml
+done
+
+echo "</dns>
+<ip address='192.168.$mynetwork.1' netmask='255.255.255.192'>
+<dhcp>
+<range start='192.168.$mynetwork.2' end='192.168.$mynetwork.62' />" >> /var/lib/libvirt/network/$1.xml
+for i in `seq 1 $3`
+do
+echo "<host mac='52:54:00:$mynetwork:$i:1' name='$2-node$i-pub' ip='192.168.$mynetwork.1$i' />
+<host mac='52:54:00:$mynetwork:$i:2' name='$2-node$i-vip' ip='192.168.$mynetwork.2$i' />" >> /var/lib/libvirt/network/$1.xml
+done
+
+echo "</dhcp>
+</ip>
+</network>" >> /var/lib/libvirt/network/$1.xml
+
+
+#cat << EOF > /var/lib/libvirt/network/$1.addnhosts
+#192.168.$mynetwork.51 rac$mynetwork-scan
+#192.168.$mynetwork.52 rac$mynetwork-scan
+#192.168.$mynetwork.53 rac$mynetwork-scan
+#EOF
+
+
+echo "Defining $1.xml"
+virsh net-define /var/lib/libvirt/network/$1.xml
+
+echo "Starting network $1"
+virsh net-start $1
+
+echo "Enabling autostart on $1"
+virsh net-autostart $1
+	
+
+########################
+## PRIVATE NETWORK
+## THIS IS AN ISOLATED NETWORK! 
+
+mac1=`date|md5sum|fold -w 2|head -1`
+myuuid=$(uuidgen)
+
+echo "<network>
+<name>$1-2</name>
+<uuid>$myuuid</uuid>
+<bridge name='virbr$mynetwork-2' stp='on' delay='0'/>
+<mac address='52:54:01:$mac1:$mac1:$mac1'/>
+<ip address='192.168.$mynetwork.65' netmask='255.255.255.224'>
+<dhcp>
+<range start='192.168.$mynetwork.66' end='192.168.$mynetwork.94' />" > /var/lib/libvirt/network/$1-2.xml
+
+for i in `seq 1 $3`
+do
+echo "<host mac='52:54:00:$mynetwork:$i:3' name='$2-node$i-priv.raclab.local' ip='192.168.$mynetwork.7$i' />" >> /var/lib/libvirt/network/$1-2.xml
+done
+
+echo "</dhcp>
+</ip>
+</network>" >> /var/lib/libvirt/network/$1-2.xml
+
+
+echo "Defining $1-2.xml"
+virsh net-define /var/lib/libvirt/network/$1-2.xml
+
+echo "Starting network $1-2"
+virsh net-start $1-2
+
+echo "Enabling autostart on $1-2"
+virsh net-autostart $1-2
+
+
+########################
+##  STORAGE NETWORK
+
+mac1=`date|md5sum|fold -w 2|head -1`
+myuuid=$(uuidgen)
+
+echo "<network>
+<name>$1-3</name>
+<uuid>$myuuid</uuid>
+<forward mode='nat'/>
+<bridge name='virbr$mynetwork-3' stp='on' delay='0'/>
+<mac address='52:54:01:$mac1:$mac1:$mac1'/>
+<ip address='192.168.$mynetwork.97' netmask='255.255.255.224'>
+<dhcp>
+<range start='192.168.$mynetwork.98' end='192.168.$mynetwork.126' /> "> /var/lib/libvirt/network/$1-3.xml
+
+for i in `seq 1 $3`
+do
+echo "<host mac='52:54:00:$mynetwork:$i:4' name='$2-node$i-nfs.raclab.local' ip='192.168.$mynetwork.10$i' />" >> /var/lib/libvirt/network/$1-3.xml
+done
+
+
+for i in `seq 1 $4`
+do
+echo "<host mac='52:54:00:$mynetwork:${i}f:4' name='$2-nfs$i.raclab.local' ip='192.168.$mynetwork.11$i' />" >> /var/lib/libvirt/network/$1-3.xml
+done
+
+
+
+echo "</dhcp>
+</ip>
+</network>" >> /var/lib/libvirt/network/$1-3.xml
+
+
+echo "Defining $1-3.xml"
+virsh net-define /var/lib/libvirt/network/$1-3.xml
+
+echo "Starting network $1-3"
+virsh net-start $1-3
+
+echo "Enabling autostart on $1-3"
+virsh net-autostart $1-3

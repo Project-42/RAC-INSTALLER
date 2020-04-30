@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# $1 subnet
+# $2 number of NFS servers
+
+#declare -A nodesstatus;
+
+for kk in `seq 1 $2`;
+do
+ myvar+="192.168.$1.11$kk:"
+done
+myvar=${myvar%?};
+
+IFS=':' read -r -a array <<< "$myvar"
+#echo "${#array[*]}"
+echo ""
+echo "waiting for "
+printf "%s\n" "${array[@]}"
+echo "to be ready..."
+
+	while true
+	do
+	  for element in "${array[@]}"
+	  do
+		#echo "$element"
+		##exec 3> /dev/tcp/$element/22
+		nc -z $element 22 2>&1 >/dev/null
+		#perl -MIO::Socket::INET -e 'exit(! defined( IO::Socket::INET->new("$element:22")))'
+		if [ $? -ne 0 ]
+		then
+			#echo "Can't not connect to $element [`date`]"
+			# nodesstatus["$element"]="Waiting"
+			#echo "nodesstatus["$element"]=${nodesstatus[$element]}"
+			sleep 10
+		else
+			exit
+	   fi
+	done #for
+
+done #while
+
+unset array
+
+exit
+
