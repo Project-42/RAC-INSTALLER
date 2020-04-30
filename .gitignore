@@ -1,6 +1,3 @@
 *.iso
-/home/arthur/RAC-INSTALLER/ol7_18c/www_html/*.iso
 *.zip
-/home/arthur/RAC-INSTALLER/ol7_18c/www_html/*.zip
 *.img
-/home/arthur/RAC-INSTALLER/ol7_18c/www_html/*.img
