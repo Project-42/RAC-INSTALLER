@@ -82,6 +82,113 @@ dbca -silent -deleteDatabase -sourceDB db112
 
 
 
+-- add the disks to the diskgroup
+
+-- Add the disks to the NFS server:
+
+
+qemu-img create -f raw /nfsshares/nfs1-disk17 5G;
+qemu-img create -f raw /nfsshares/nfs1-disk18 5G;
+qemu-img create -f raw /nfsshares/nfs1-disk19 5G;
+qemu-img create -f raw /nfsshares/nfs1-disk20 5G;
+chown oracle:oinstall -R /nfsshares/
+chmod 775 -R /nfsshares/
+cat /etc/exports
+/etc/init.d/nfs restart
+
+
+sqlplus as sysasm
+
+set lines 500
+set pages 50
+col path for a60
+select
+   mount_status,
+   header_status,
+   mode_status,
+   state,
+   total_mb,
+   free_mb,
+   name,
+   path
+from
+   v$asm_disk
+where header_status = 'CANDIDATE';
+
+
+MOUNT_S HEADER_STATU MODE_ST STATE      TOTAL_MB    FREE_MB NAME                           PATH
+------- ------------ ------- -------- ---------- ---------- ------------------------------ ------------------------------------------------------------
+CLOSED  CANDIDATE    ONLINE  NORMAL            0          0                                /u01/oradata/nfs1/nfs1-disk23
+CLOSED  CANDIDATE    ONLINE  NORMAL            0          0                                /u01/oradata/nfs1/nfs1-disk24
+CLOSED  CANDIDATE    ONLINE  NORMAL            0          0                                /u01/oradata/nfs1/nfs1-disk22
+CLOSED  CANDIDATE    ONLINE  NORMAL            0          0                                /u01/oradata/nfs1/nfs1-disk25
+
+SQL> ALTER DISKGROUP DATA ADD DISK '/u01/oradata/nfs1/nfs1-disk22';
+
+Diskgroup altered.
+
+SQL> ALTER DISKGROUP DATA ADD DISK '/u01/oradata/nfs1/nfs1-disk23';
+
+Diskgroup altered.
+
+SQL> ALTER DISKGROUP DATA ADD DISK '/u01/oradata/nfs1/nfs1-disk24';
+
+Diskgroup altered.
+
+SQL> ALTER DISKGROUP DATA ADD DISK '/u01/oradata/nfs1/nfs1-disk25';
+
+Diskgroup altered.
+
+
+-- Check rebalance (since this diskgroup has normal mirroring)
+
+SQL> show parameter asm_power_limit;
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+asm_power_limit                      integer     1
+SQL> select * from gv$asm_operation;
+
+   INST_ID GROUP_NUMBER OPERA PASS      STAT      POWER     ACTUAL      SOFAR   EST_WORK   EST_RATE EST_MINUTES ERROR_CODE                                       CON_ID
+---------- ------------ ----- --------- ---- ---------- ---------- ---------- ---------- ---------- ----------- -------------------------------------------- ----------
+         1            4 REBAL COMPACT   WAIT          1          1          0          0          0           0                                                       0
+         1            4 REBAL REBALANCE RUN           1          1          0       2513          0           0                                                       0
+         1            4 REBAL REBUILD   DONE          1          1          0          0          0           0                                                       0
+         1            4 REBAL RESYNC    DONE          1          1          0          0          0           0                                                       0
+         2            4 REBAL COMPACT   WAIT          1                                                                                                               0
+         2            4 REBAL REBALANCE WAIT          1                                                                                                               0
+         2            4 REBAL REBUILD   WAIT          1                                                                                                               0
+         2            4 REBAL RESYNC    WAIT          1                                                                                                               0
+
+8 rows selected.
+
+SQL>
+
+-- Force a faster rebalance (since we have all DBs down)
+
+
+SQL> ALTER DISKGROUP DATA REBALANCE POWER  1024 NOWAIT;
+
+Diskgroup altered.
+
+SQL> select * from gv$asm_operation;
+
+   INST_ID GROUP_NUMBER OPERA PASS      STAT      POWER     ACTUAL      SOFAR   EST_WORK   EST_RATE EST_MINUTES ERROR_CODE                                       CON_ID
+---------- ------------ ----- --------- ---- ---------- ---------- ---------- ---------- ---------- ----------- -------------------------------------------- ----------
+         1            4 REBAL COMPACT   WAIT       1024       1024          0          0          0           0                                                       0
+         1            4 REBAL REBALANCE RUN        1024       1024         22       1094       2443           0                                                       0
+         1            4 REBAL REBUILD   DONE       1024       1024          0          0          0           0                                                       0
+         1            4 REBAL RESYNC    DONE       1024       1024          0          0          0           0                                                       0
+         2            4 REBAL COMPACT   WAIT       1024                                                                                                               0
+         2            4 REBAL REBALANCE WAIT       1024                                                                                                               0
+         2            4 REBAL REBUILD   WAIT       1024                                                                                                               0
+         2            4 REBAL RESYNC    WAIT       1024                                                                                                               0
+
+8 rows selected.
+
+SQL>
+
+
 
 
 
