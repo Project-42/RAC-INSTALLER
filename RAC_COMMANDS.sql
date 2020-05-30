@@ -14,6 +14,7 @@ virsh destroy rac2-node1 ; virsh destroy rac2-node2 ;  virsh undefine rac2-node2
 
 
 
+
 dbca -silent -deleteDatabase -sourceDB db112
 
 
