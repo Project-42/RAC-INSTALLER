@@ -55,7 +55,6 @@ nohup time /u01/app/oracle/product/11.2.0/dbhome_1/bin/dbca -silent \
 -templateName General_Purpose.dbc \
 -gdbName reco11  \
 -sid reco11  \
--pdbAdminPassword Welcome1 \
 -SysPassword Welcome1 \
 -SystemPassword Welcome1 \
 -emConfiguration NONE \
