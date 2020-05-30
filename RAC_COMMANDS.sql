@@ -11,9 +11,69 @@ RAC COMMANDS.sql
 
 virsh destroy rac2-node1 ; virsh destroy rac2-node2 ;  virsh undefine rac2-node2 ; virsh undefine rac2-node1 ; virsh destroy rac2-nfs1 ; virsh undefine rac2-nfs1 ; /home/solifugo/RAC-INSTALLER/root/deleteNetwork NAT1virsh destroy rac2-node1 ; virsh destroy rac2-node2 ;  virsh undefine rac2-node2 ; virsh undefine rac2-node1 ; virsh destroy rac2-nfs1 ; virsh undefine rac2-nfs1 ; /home/solifugo/RAC-INSTALLER/root/deleteNetwork NAT1virsh destroy rac2-node1 ; virsh destroy rac2-node2 ;  virsh undefine rac2-node2 ; virsh undefine rac2-node1 ; virsh destroy rac2-nfs1 ; virsh undefine rac2-nfs1 ; /home/solifugo/RAC-INSTALLER/ol7_19c/root/deleteNetwork NAT1
 
+
+
+
 dbca -silent -deleteDatabase -sourceDB db112
 
+
 /u01/app/oracle/product/19.3.0/dbhome_1/bin/dbca -silent -deleteDatabase -sourceDB rac2cdb1
+
+-- Create SLIM Databases:
+
+
+nohup time /u01/app/oracle/product/19.3.0/dbhome_1/bin/dbca -silent \
+-createDatabase \
+-templateName General_Purpose.dbc \
+-gdbName reco19  \
+-sid reco19  \
+-createAsContainerDatabase true \
+-numberOfPdbs 1 \
+-pdbName pdb_reco19 \
+-pdbAdminPassword Welcome1 \
+-SysPassword Welcome1 \
+-SystemPassword Welcome1 \
+-emConfiguration NONE \
+-storageType ASM \
+-redoLogFileSize 200 \
+-diskGroupName DATA \
+-recoveryAreaDestination +RECO \
+-enableArchive true \
+-archiveLogMode auto \
+-characterSet AL32UTF8 \
+-nationalCharacterSet AL16UTF16 \
+-databaseType MULTIPURPOSE \
+-sampleschema false \
+-ignorePreReqs \
+-nodelist rac1-node1,rac1-node2 \
+-dbOptions JSERVER:true,ORACLE_TEXT:false,IMEDIA:false,CWMLITE:false,SPATIAL:false,OMS:false,APEX:false,DV:false &
+
+
+nohup time /u01/app/oracle/product/11.2.0/dbhome_1/bin/dbca -silent \
+-createDatabase \
+-templateName General_Purpose.dbc \
+-gdbName reco11  \
+-sid reco11  \
+-pdbAdminPassword Welcome1 \
+-SysPassword Welcome1 \
+-SystemPassword Welcome1 \
+-emConfiguration NONE \
+-storageType ASM \
+-redoLogFileSize 200 \
+-diskGroupName DATA \
+-recoveryAreaDestination +RECO \
+-enableArchive true \
+-archiveLogMode auto \
+-characterSet AL32UTF8 \
+-nationalCharacterSet AL16UTF16 \
+-databaseType MULTIPURPOSE \
+-sampleschema false \
+-ignorePreReqs \
+-nodelist rac1-node1,rac1-node2 \
+-dbOptions JSERVER:true,ORACLE_TEXT:false,IMEDIA:false,CWMLITE:false,SPATIAL:false,OMS:false,APEX:false,DV:false &
+
+
+-- Create Databases:
 
 /u01/app/oracle/product/19.3.0/dbhome_1/bin/dbca -silent \
 -createDatabase \
@@ -79,6 +139,8 @@ dbca -silent -deleteDatabase -sourceDB db112
 -sampleschema false \
 -ignorePreReqs \
 -nodelist rac1-node1,rac1-node2
+
+
 
 
 
